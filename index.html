@@ -1,27 +1,32 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <!-- Déclaration du type de document : ici, un document HTML5 -->
-    <meta charset="UTF-8">
-    <!-- Définit l'encodage des caractères en UTF-8 (pour prendre en charge des caractères spéciaux, accents, etc.) -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Définit que le contenu s'ajustera au viewport (écran) pour les appareils mobiles -->
-    
-    <title>Mon Jeu JavaScript</title>
-    <!-- Déclare le titre de la page affiché dans l'onglet du navigateur -->
-
-    <link rel="stylesheet" href="style.css">
-    <!-- Lien vers une feuille de style externe nommée "style.css" pour styliser la page -->
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Mon Jeu JavaScript</title>
+   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Début du corps du document HTML -->
-    
-    <canvas id="jeu" width="800" height="400"></canvas>
-    <!-- Création d'un élément <canvas>, utilisé pour dessiner des graphismes via JavaScript -->
-    <!-- - id="jeu" : Attribut permettant d'identifier cet élément (utile pour le manipuler avec JavaScript) -->
-    <!-- - width="800" height="400" : Dimensions du canvas en pixels -->
+   <div class="game-container">
+       <canvas id="jeu" width="800" height="400"></canvas>
+       
+       <div class="game-info">
+           <div id="score" class="game-text"></div>
+           <div id="vies" class="game-text"></div>
+           <div id="vitesse" class="game-text"></div>
+       </div>
+       
+       <div id="gameOver" class="game-over" style="display: none;">
+           Game Over
+       </div>
+   </div>
 
-    <script src="script.js"></script>
-    <!-- Lien vers un fichier JavaScript externe nommé "script.js" contenant la logique du jeu -->
+   <!-- Images préchargées -->
+   <div style="display: none;">
+       <img id="backgroundImage" src="background.jpg" alt="Background">
+       <img id="tronc" src="tronc_d_arbre.png" alt="Tronc d'arbre">
+   </div>
+
+   <script src="script.js"></script>
 </body>
 </html>

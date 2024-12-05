@@ -45,7 +45,7 @@ function updateObstacles() {
     obstacles = obstacles.filter(obs => obs.x > -obs.width);
 
     // Augmente progressivement la vitesse en fonction du score
-    vitesseBase = 4 + Math.floor(score / 500); // Incrément de vitesse tous les 500 points
+    vitesseBase = 4 + Math.floor(score / 2500); // Incrément de vitesse tous les 500 points
 
     // Ajoute un nouvel obstacle toutes les 2 secondes
     if (score % 120 === 0) { // 120 frames ≈ 2 secondes à 60 fps
@@ -102,8 +102,8 @@ function keyUp(e) {
 function boucle() {
     if (gameOver) {
         // Affiche "Game Over" si le jeu est terminé
-        ctx.fillStyle = "white";
-        ctx.font = "40px Arial";
+        ctx.fillStyle = "red";
+        ctx.font = "80px Papyrus";
         ctx.fillText("Game Over", canvas.width / 2 - 100, canvas.height / 2);
         return; // Arrête la boucle
     }

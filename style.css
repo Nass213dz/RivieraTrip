@@ -1,0 +1,64 @@
+/* Reset des marges et du padding */
+* {
+   margin: 0;
+   padding: 0;
+   box-sizing: border-box;
+}
+
+/* Style du body */
+body {
+   background-color: #377aed;
+   background-image: url('background.jpg');
+   background-size: cover;
+   background-position: center;
+   min-height: 100vh;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   padding: 0;
+}
+
+/* Style du canvas */
+#jeu {
+   display: block;
+   border: 2px solid black;
+   background: rgba(76, 96, 211, 0);
+   background-image: url('background.jpg');
+   background-position: center;
+   box-shadow: 0 0 10px rgba(0,0,0,0.3);
+   position: fixed;
+   top: 50%;
+   left: 50%;
+   transform: translate(-50%, -50%);
+}
+
+/* Style pour les textes du jeu */
+.game-text {
+   color: yellow;
+   font-family: Arial, sans-serif;
+   font-size: 20px;
+   position: absolute;
+   left: 10px;
+   top: 20px;
+}
+
+/* Style pour le message de game over */
+.game-over {
+   position: center;
+   top: 50%;
+   left: 50%;
+   transform: translate(-50%, -50%);
+   color: rgb(219, 97, 97);
+   font-size: 40px;
+   font-family: Arial, sans-serif;
+   text-align: center;
+}
+
+/* Example for setting the image as a background if you use a div */
+.balle {
+   width: 20px;
+   height: 20px;
+   background-image: url('canon_ball.png');
+   background-size: cover;
+   position: absolute;
+}
