@@ -20,7 +20,7 @@ function creerObstacle() {
         speed: 4 // Vitesse de déplacement de l'obstacle
     };
     obstacles.push(obstacle);
-}
+} 
 
 // Mise à jour des obstacles
 function updateObstacles() {
