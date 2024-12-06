@@ -412,7 +412,7 @@ function iaTirerMissile() {
 }
 
 function activerIA() {
-    iaActive = true; A
+    iaActive = true;
 }
 
 
@@ -515,7 +515,6 @@ for (let missile of missiles) {
 }
 
 if (!iaDetruite) {
-    ctx.fillStyle = "purple";
     ctx.drawImage(IAImage, ia.x, ia.y, ia.width, ia.height);
 }
 
