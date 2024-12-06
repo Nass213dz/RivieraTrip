@@ -33,7 +33,7 @@ body {
 
 /* Style pour les textes du jeu */
 .game-text {
-   color: yellow;
+   color: rgba(255, 255, 0, 0);
    font-family: Arial, sans-serif;
    font-size: 20px;
    position: absolute;

@@ -3,8 +3,9 @@ const canvas = document.getElementById("jeu");
 const ctx = canvas.getContext("2d");
 
 // Variables globales
-let joueur = { x: 50, y: 180, width: 50, height: 50, speed: 5, dy: 0 };
+let joueur = { x: 50, y: 180, width: 70, height: 50, speed: 5, dy: 0 };
 let obstacles = [];
+let vagues = [];
 let balles = []; // Tableau pour stocker les balles
 let score = 0;
 let gameOver = false;
@@ -18,12 +19,23 @@ let coeurs = []; // Tableau pour les cœurs
 let bombes = []; // Tableau pour les bombes
 let tonneaux = []; // Tableau pour les tonneaux
 
+let ia = { x: canvas.width - 50, y: canvas.height / 2, width: 20, height: 20, speed: 2, dy: 0 };
+
+
 const obstacleImage = new Image();
 const balleImage = new Image();
+const coeurImage = new Image();
+const bombeImage = new Image();
+const tonneauImage = new Image();
 const joueurImage = new Image();
+const vagueImage = new Image();
 obstacleImage.src = 'tronc_d_arbre.png';
 balleImage.src = 'canon_ball.png';
+coeurImage.src = 'coeur.png';
+bombeImage.src = 'bombe.png';
+tonneauImage.src = 'tonneau.png';
 joueurImage.src = 'joueur.png';
+vagueImage.src = 'vague.png';
 
 let imagesChargees = false;
 
@@ -39,7 +51,7 @@ function creerObstacle() {
         y: Math.random() * (canvas.height - 30),
         width: 50,
         height: 100,
-        speed: vitesseBase,
+        speed: vitesseBase/1.65,
         image: obstacleImage
     };
     obstacles.push(obstacle);
@@ -70,8 +82,47 @@ function updateObstacles() {
 
     if (score % 100 === 0) {
         creerObstacle();
+    }
 }
+
+function creerVague() {
+    const vague = {
+        x: canvas.width,
+        y: Math.random() * (canvas.height - 30),
+        width: 200,
+        height: 100,
+        speed: 7,
+        image: vagueImage
+    };
+    vagues.push(vague);
 }
+
+function updateVagues() {
+    for (let vague of vagues) {
+        vague.x -= vague.speed;
+
+        // Vérifie les collisions avec le joueur
+        if (
+            joueur.x < vague.x + vague.width &&
+            joueur.x + joueur.width > vague.x &&
+            joueur.y < vague.y + vague.height &&
+            joueur.y + joueur.height > vague.y
+        ) {
+            vies -= 2;
+            vagues = vagues.filter(o => o !== vague);
+            if (vies <= 0) {
+                gameOver = true;
+            }
+        }
+    }
+
+    vagues = vagues.filter(vague => vague.x > -vague.width);
+
+    if (score % 1000 === 999) {
+        creerVague();
+    }
+}
+
 // Mise à jour des balles
 function updateBalles() {
     for (let balle of balles) {
@@ -161,8 +212,8 @@ function creerTonneau() {
     const tonneau = {
         x: canvas.width,
         y: Math.random() * (canvas.height - 40),
-        width: 40,
-        height: 40,
+        width: 50,
+        height: 50,
         speed: vitesseBase / 1.65
     };
     tonneaux.push(tonneau);
@@ -254,12 +305,56 @@ function updateTonneaux() {
     tonneaux = tonneaux.filter(tonneau => tonneau.x > -tonneau.width);
 }
 
+function creerIA() {
+    const tonneau = {
+        x: canvas.width,
+        y: Math.random() * (canvas.height - 40),
+        width: 50,
+        height: 50,
+        speed: vitesseBase / 1.65
+    };
+    tonneaux.push(tonneau);
+}
+
+function updateIA() {
+    // Suivre verticalement
+    if (ia.y < joueur.y) {
+        ia.y += ia.speed;
+    } else if (ia.y > joueur.y) {
+        ia.y -= ia.speed;
+    }
+
+    // Suivre horizontalement (optionnel, si nécessaire)
+    if (ia.x < joueur.x) {
+        ia.x += ia.speed;
+    } else if (ia.x > joueur.x) {
+        ia.x -= 0;
+    }
+
+    // Limiter la position de l'IA pour qu'elle reste dans le canvas
+    ia.y = Math.max(0, Math.min(canvas.height - ia.height, ia.y));
+    ia.x = Math.max(0, Math.min(canvas.width - ia.width, ia.x));
+
+    // Vérifier si l'IA touche le joueur
+    if (
+        ia.x < joueur.x + joueur.width &&
+        ia.x + ia.width > joueur.x &&
+        ia.y < joueur.y + joueur.height &&
+        ia.y + ia.height > joueur.y
+    ) {
+        vies--; // Réduire les vies si l'IA touche le joueur
+        if (vies <= 0) {
+            gameOver = true;
+        }
+    }
+}
+
+
 // Dessiner les éléments
 function dessiner() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Dessiner le joueur
-    ctx.fillStyle = "white";
     ctx.drawImage(joueurImage, joueur.x, joueur.y, joueur.width, joueur.height);
 
     // Dessiner les obstacles
@@ -267,24 +362,52 @@ function dessiner() {
         ctx.drawImage(obstacleImage, obs.x, obs.y, obs.width, obs.height);
     }
 
+    for (let vague of vagues) {
+        ctx.drawImage(vagueImage, vague.x, vague.y, vague.width, vague.height);
+    }
+
     // Dessiner les balles
     for (let balle of balles) {
         ctx.drawImage(balleImage, balle.x, balle.y, balle.width, balle.height);
     }
+
+    // Dessiner les tonneaux
+    for (let tonneau of tonneaux) {
+        ctx.drawImage(tonneauImage, tonneau.x, tonneau.y, tonneau.width, tonneau.height);
+    }
+
+    // Dessiner les coeurs
+    for (let coeur of coeurs) {
+        ctx.drawImage(coeurImage, coeur.x, coeur.y, coeur.width, coeur.height);
+    }
+
+    // Dessiner les bombes
+    for (let bombe of bombes) {
+        ctx.drawImage(bombeImage, bombe.x, bombe.y, bombe.width, bombe.height);
+    }
+
+    // Dessiner l'IA
+    ctx.fillStyle = "purple";
+    ctx.fillRect(ia.x, ia.y, ia.width, ia.height);
+
+    // Dessiner un seul joueur
+    ctx.drawImage(joueurImage, joueur.x, joueur.y, joueur.width, joueur.height);
 
     // Afficher le score et les vies
     ctx.fillStyle = "yellow";
     ctx.font = "20px Arial";
     ctx.fillText(`Score: ${score}`, 10, 20);
     ctx.fillText(`Vies: ${vies}`, 10, 40);
+    ctx.fillText(`Vitesse: ${vitesseBase.toFixed(1)}`, 10, 60);
 
     // Afficher "Game Over" si la partie est terminée
     if (gameOver) {
         ctx.fillStyle = "red";
-        ctx.font = "40px Papyrus";
+        ctx.font = "40px Arial";
         ctx.fillText("Game Over", canvas.width / 2 - 100, canvas.height / 2);
     }
 }
+
 
 // Boucle du jeu
 function gameLoop() {
@@ -292,10 +415,12 @@ function gameLoop() {
 
     updateJoueur();
     updateObstacles();
+    updateVagues();
     updateBalles();
     updateCoeurs();
     updateBombes();
     updateTonneaux();
+    updateIA();
 
     score++;
 
@@ -303,6 +428,8 @@ function gameLoop() {
 
     requestAnimationFrame(gameLoop);
 }
+
+setInterval(creerTonneau, 5000);
 
 // Contrôles du joueur
 document.addEventListener("keydown", function (event) {
