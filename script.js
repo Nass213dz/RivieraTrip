@@ -517,7 +517,7 @@ function dessiner() {
     if (!iaDetruite) {
         ctx.drawImage(IAImage, ia.x, ia.y, ia.width, ia.height);
     }
-
+    
     ctx.fillStyle = "yellow";
     ctx.font = "20px Arial";
     ctx.fillText(`Score: ${score}`, 10, 20);
