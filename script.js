@@ -131,6 +131,7 @@ function updateObstacles() {
             obstacles = obstacles.filter(o => o !== obs);
             if (vies <= 0) {
                 gameOver = true;
+                vies = 0;
             }
         }
     }
@@ -349,8 +350,11 @@ function updateBombes() {
             bombes = bombes.filter(o => o !== bombe);
             if (vies <= 0) {
                 gameOver = true;
+                vies = 0;
             }
         }
+
+                
     }
     bombes = bombes.filter(bombe => bombe.x > -bombe.width);
 }
@@ -388,6 +392,7 @@ function updateTonneaux() {
 
             if (vies <= 0) {
                 gameOver = true;
+                vies = 0;
             }
         }
     }
@@ -518,7 +523,6 @@ if (!iaDetruite) {
     ctx.font = "20px Arial";
     ctx.fillText(`Score: ${score}`, 10, 20);
     ctx.fillText(`Vies: ${vies}`, 10, 40);
-    ctx.fillText(`Vitesse: ${vitesseBase.toFixed(1)}`, 10, 60);
 
     if (gameOver) {
         ctx.fillStyle = "red";
