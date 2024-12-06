@@ -509,25 +509,25 @@ function dessiner() {
 
     ctx.drawImage(joueurImage, joueur.x, joueur.y, joueur.width, joueur.height);
 
-ctx.fillStyle = "orange";
-for (let missile of missiles) {
-    ctx.drawImage(missileImage, missile.x, missile.y, missile.width, missile.height);
-}
-
-if (!iaDetruite) {
-    ctx.drawImage(IAImage, ia.x, ia.y, ia.width, ia.height);
-}
-
-    ctx.fillStyle = "yellow";
-    ctx.font = "20px Arial";
-    ctx.fillText(`Score: ${score}`, 10, 20);
-    ctx.fillText(`Vies: ${vies}`, 10, 40);
-
-    if (gameOver) {
-        ctx.fillStyle = "red";
-        ctx.font = "40px Arial";
-        ctx.fillText("Game Over", canvas.width / 2 - 100, canvas.height / 2);
+    ctx.fillStyle = "orange";
+    for (let missile of missiles) {
+        ctx.drawImage(missileImage, missile.x, missile.y, missile.width, missile.height);
     }
+
+    if (!iaDetruite) {
+        ctx.drawImage(IAImage, ia.x, ia.y, ia.width, ia.height);
+    }
+
+        ctx.fillStyle = "yellow";
+        ctx.font = "20px Arial";
+        ctx.fillText(`Score: ${score}`, 10, 20);
+        ctx.fillText(`Vies: ${vies}`, 10, 40);
+
+        if (gameOver) {
+            ctx.fillStyle = "red";
+            ctx.font = "40px Arial";
+            ctx.fillText("Game Over", canvas.width / 2 - 100, canvas.height / 2);
+        }
 }
 
 function gameLoop() {
