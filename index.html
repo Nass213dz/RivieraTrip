@@ -3,8 +3,35 @@
 <head>
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>Mon Jeu JavaScript</title>
+   <title>Riviera Trip</title>
    <link rel="stylesheet" href="style.css">
+   <link rel="icon" href="logo.png" type="image/png">
+   <style>
+       /* Ajout de styles essentiels */
+       #gameArea {
+           position: center;
+           width: 800px;
+           height: 400px;
+           border: 1px solid #000;
+           background-color: #f0f0f0; /* Couleur par défaut avant le Konami Code */
+       }
+
+       .game-container {
+           margin-top: 20px;
+           text-align: center;
+       }
+
+       .game-text {
+           font-size: 20px;
+           margin: 5px;
+       }
+
+       .game-over {
+           font-size: 30px;
+           color: red;
+           font-weight: bold;
+       }
+   </style>
 </head>
 <body>
     <div id="gameArea">
@@ -35,6 +62,8 @@
         <img id="tronc" src="tronc_d_arbre.png" alt="Tronc d'arbre">
     </div>
 
+    <!-- Script pour le jeu -->
     <script src="script.js"></script>
+
 </body>
 </html>

@@ -1,25 +1,73 @@
-// Sélection du canvas
 const canvas = document.getElementById("jeu");
 const ctx = canvas.getContext("2d");
 
-// Variables globales
+const gameArea = document.getElementById("gameArea");
+gameArea.style.backgroundColor = "transparent";
+gameArea.style.backgroundImage = "none";
+
+
+
 let joueur = { x: 50, y: 180, width: 70, height: 50, speed: 5, dy: 0 };
 let obstacles = [];
 let vagues = [];
-let balles = []; // Tableau pour stocker les balles
+let balles = [];
 let score = 0;
 let gameOver = false;
 let vitesseBase = 4;
 let vies = 3;
-let dernierTir = 0; // Initialisé à 0
-const delaiEntreTirs = 2500; // Délai en millisecondes (3 secondes)
+let dernierTir = 0;
+const delaiEntreTirs = 2500;
+const vitesseMax = 12;
+let dernierObstacle = 0;
+const intervalObstacle = 2000*(vitesseBase/6);
 
-// Ajout des tableaux pour les nouveaux objets
-let coeurs = []; // Tableau pour les cœurs
-let bombes = []; // Tableau pour les bombes
-let tonneaux = []; // Tableau pour les tonneaux
 
-let ia = { x: canvas.width - 50, y: canvas.height / 2, width: 20, height: 20, speed: 2, dy: 0 };
+
+const konamiCode = [
+    "ArrowUp", "ArrowUp",
+    "ArrowDown", "ArrowDown",
+    "ArrowLeft", "ArrowRight",
+    "ArrowLeft", "ArrowRight",
+    "b", "a"
+];
+let konamiIndex = 0;
+
+window.addEventListener("keydown", (event) => {
+    if (event.key === konamiCode[konamiIndex]) {
+        konamiIndex++;
+        if (konamiIndex === konamiCode.length) {
+            vies += 500;
+            alert("Konami Code activé ! +500 vies");
+            const gameArea = document.getElementById("gameArea");
+            gameArea.style.backgroundImage = "url('konamicode.jpg')";
+            gameArea.style.backgroundSize = "cover"; 
+            gameArea.style.backgroundPosition = "center"; 
+            konamiIndex = 0; 
+        }
+    } else {
+        konamiIndex = 0;
+    }
+});
+
+let coeurs = []; 
+let bombes = [];
+let tonneaux = []; 
+
+let ia = { 
+    x: canvas.width - 80, 
+    y: canvas.height / 2, 
+    width: 80, 
+    height: 60, 
+    speed: 3 
+};
+
+let missiles = []; 
+let iaDetruite = false;
+let dernierTirIA = 0; 
+const delaiTirIA = 2000;
+let tempsReapparitionIA = 12000; 
+let tempsDetruite = 0; 
+
 
 
 const obstacleImage = new Image();
@@ -29,6 +77,8 @@ const bombeImage = new Image();
 const tonneauImage = new Image();
 const joueurImage = new Image();
 const vagueImage = new Image();
+const IAImage = new Image();
+const missileImage = new Image();
 obstacleImage.src = 'tronc_d_arbre.png';
 balleImage.src = 'canon_ball.png';
 coeurImage.src = 'coeur.png';
@@ -36,19 +86,22 @@ bombeImage.src = 'bombe.png';
 tonneauImage.src = 'tonneau.png';
 joueurImage.src = 'joueur.png';
 vagueImage.src = 'vague.png';
+IAImage.src = 'ia.png';
+missileImage.src = 'missile.png';
 
 let imagesChargees = false;
 
-// Attendre que toutes les images soient chargées
+let iaActive = false; 
+const delaiApparitionIA = 3000;
+
 obstacleImage.onload = balleImage.onload = function () {
     imagesChargees = true;
 };
 
-// Générer des obstacles
 function creerObstacle() {
     const obstacle = {
         x: canvas.width,
-        y: Math.random() * (canvas.height - 30),
+        y: Math.random() * (canvas.height - 100),
         width: 50,
         height: 100,
         speed: vitesseBase/1.65,
@@ -57,12 +110,17 @@ function creerObstacle() {
     obstacles.push(obstacle);
 }
 
-// Mise à jour des obstacles
 function updateObstacles() {
+    const maintenant = Date.now();
+
+    if (maintenant - dernierObstacle >= intervalObstacle) {
+        creerObstacle();
+        dernierObstacle = maintenant; 
+    }
+
     for (let obs of obstacles) {
         obs.x -= obs.speed;
 
-        // Vérifie les collisions avec le joueur
         if (
             joueur.x < obs.x + obs.width &&
             joueur.x + joueur.width > obs.x &&
@@ -78,12 +136,9 @@ function updateObstacles() {
     }
 
     obstacles = obstacles.filter(obs => obs.x > -obs.width);
-    vitesseBase = 4 + Math.floor(score / 2500);
-
-    if (score % 100 === 0) {
-        creerObstacle();
-    }
 }
+
+
 
 function creerVague() {
     const vague = {
@@ -101,14 +156,13 @@ function updateVagues() {
     for (let vague of vagues) {
         vague.x -= vague.speed;
 
-        // Vérifie les collisions avec le joueur
         if (
             joueur.x < vague.x + vague.width &&
             joueur.x + joueur.width > vague.x &&
             joueur.y < vague.y + vague.height &&
             joueur.y + joueur.height > vague.y
         ) {
-            vies -= 2;
+            vies -= 3;
             vagues = vagues.filter(o => o !== vague);
             if (vies <= 0) {
                 gameOver = true;
@@ -123,17 +177,33 @@ function updateVagues() {
     }
 }
 
-// Mise à jour des balles
 function updateBalles() {
     for (let balle of balles) {
         balle.x += balle.speed;
 
-        // Supprime la balle si elle sort du canvas
         if (balle.x > canvas.width) {
             balles = balles.filter(b => b !== balle);
         }
+        balle.x += balle.speed;
 
-        // Vérifie les collisions avec les obstacles
+        if (balle.x > canvas.width) {
+            balles = balles.filter(b => b !== balle);
+            continue;
+        }
+
+        if (
+            !iaDetruite &&
+            balle.x < ia.x + ia.width &&
+            balle.x + balle.width > ia.x &&
+            balle.y < ia.y + ia.height &&
+            balle.y + balle.height > ia.y
+        ) {
+            iaDetruite = true; 
+            balles = balles.filter(b => b !== balle); 
+            tempsDetruite = Date.now(); 
+            break;
+        }
+
         for (let obs of obstacles) {
             if (
                 balle.x < obs.x + obs.width &&
@@ -141,15 +211,15 @@ function updateBalles() {
                 balle.y < obs.y + obs.height &&
                 balle.y + balle.height > obs.y
             ) {
-                obstacles = obstacles.filter(o => o !== obs); // Supprime l'obstacle touché
-                balles = balles.filter(b => b !== balle); // Supprime la balle
-                break; // Passe à la balle suivante
+                obstacles = obstacles.filter(o => o !== obs);
+                balles = balles.filter(b => b !== balle); 
+                break;
             }
         }
     }
+    
 }
 
-// Mise à jour du joueur
 function updateJoueur() {
     joueur.y += joueur.dy;
 
@@ -157,33 +227,51 @@ function updateJoueur() {
     if (joueur.y + joueur.height > canvas.height) joueur.y = canvas.height - joueur.height;
 }
 
-let balle = null; // Variable pour stocker la balle
+let balle = null; 
+let missile = null;
 
 function tirerBalle() {
-    const maintenant = Date.now(); // Récupère l'heure actuelle en millisecondes
+    const maintenant = Date.now();
     if (maintenant - dernierTir >= delaiEntreTirs) {
-        // Si le délai est écoulé, permettre un tir
         const nouvelleBalle = {
-            x: joueur.x + joueur.width,  // Position à droite du joueur
-            y: joueur.y + joueur.height / 2 - 20,  // Position au centre vertical du joueur
-            width: 40,  // Largeur de la balle
-            height: 40,  // Hauteur de la balle
-            speed: 13  // Vitesse de déplacement de la balle
+            x: joueur.x + joueur.width,  
+            y: joueur.y + joueur.height / 2 - 20, 
+            width: 40, 
+            height: 40,  
+            speed: 13
         };
 
-        // Ajoute la balle au tableau balles (ce qui permet de la dessiner)
         balles.push(nouvelleBalle);
 
-        // Log la balle dans la console pour le débogage
         console.log("Balle tirée :", nouvelleBalle);
 
-        dernierTir = maintenant; // Met à jour l'heure du dernier tir
+        dernierTir = maintenant; 
     } else {
         console.log("Tir impossible, délai non écoulé !");
     }
+    for (let balle of balles) {
+    balle.x += balle.speed;
+
+    if (balle.x > canvas.width) {
+        balles = balles.filter(b => b !== balle);
+        continue;
+    }
+
+    if (
+        !iaDetruite &&
+        balle.x < ia.x + ia.width &&
+        balle.x + balle.width > ia.x &&
+        balle.y < ia.y + ia.height &&
+        balle.y + balle.height > ia.y
+    ) {
+        iaDetruite = true; 
+        balles = balles.filter(b => b !== balle);
+        tempsDetruite = Date.now();
+        break;
+    }
+}
 }
 
-// Générer un cœur
 function creerCoeur(x, y) {
     const coeur = {
         x,
@@ -195,7 +283,6 @@ function creerCoeur(x, y) {
     coeurs.push(coeur);
 }
 
-// Générer une bombe
 function creerBombe(x, y) {
     const bombe = {
         x,
@@ -207,7 +294,6 @@ function creerBombe(x, y) {
     bombes.push(bombe);
 }
 
-// Générer un tonneau
 function creerTonneau() {
     const tonneau = {
         x: canvas.width,
@@ -219,19 +305,17 @@ function creerTonneau() {
     tonneaux.push(tonneau);
 }
 
-// Mise à jour des cœurs
 function updateCoeurs() {
     for (let coeur of coeurs) {
         coeur.x -= coeur.speed;
 
-        // Vérifie si le joueur ramasse un cœur
         if (
             joueur.x < coeur.x + coeur.width &&
             joueur.x + joueur.width > coeur.x &&
             joueur.y < coeur.y + coeur.height &&
             joueur.y + joueur.height > coeur.y
         ) {
-            vies = Math.min(vies + 1, 3); // Augmente les vies jusqu'à un maximum de 3
+            vies = Math.min(vies + 1, 500);
             coeurs = coeurs.filter(c => c !== coeur);
         }
     }
@@ -239,12 +323,10 @@ function updateCoeurs() {
     coeurs = coeurs.filter(coeur => coeur.x > -coeur.width);
 }
 
-// Mise à jour des bombes
 function updateBombes() {
     for (let bombe of bombes) {
         bombe.x -= bombe.speed;
 
-        // Vérifie si une bombe touche un obstacle
         for (let obs of obstacles) {
             if (
                 bombe.x < obs.x + obs.width &&
@@ -252,35 +334,30 @@ function updateBombes() {
                 bombe.y < obs.y + obs.height &&
                 bombe.y + bombe.height > obs.y
             ) {
-                obstacles = obstacles.filter(o => o !== obs); // Supprime l'obstacle touché
-                bombes = bombes.filter(b => b !== bombe); // Supprime la bombe
+                obstacles = obstacles.filter(o => o !== obs); 
+                bombes = bombes.filter(b => b !== bombe);
                 break;
             }
         }
-        // Vérifie les collisions avec le joueur
         if (
             joueur.x < bombe.x + bombe.width &&
             joueur.x + joueur.width > bombe.x &&
             joueur.y < bombe.y + bombe.height &&
             joueur.y + joueur.height > bombe.y
         ) {
-            vies--;
+            vies -= 2;
             bombes = bombes.filter(o => o !== bombe);
             if (vies <= 0) {
                 gameOver = true;
             }
         }
     }
-
     bombes = bombes.filter(bombe => bombe.x > -bombe.width);
 }
 
-// Mise à jour des tonneaux
 function updateTonneaux() {
     for (let tonneau of tonneaux) {
         tonneau.x -= tonneau.speed;
-
-        // Vérifie si une balle touche un tonneau
         for (let balle of balles) {
             if (
                 balle.x < tonneau.x + tonneau.width &&
@@ -288,76 +365,119 @@ function updateTonneaux() {
                 balle.y < tonneau.y + tonneau.height &&
                 balle.y + balle.height > tonneau.y
             ) {
-                balles = balles.filter(b => b !== balle); // Supprime la balle
-                tonneaux = tonneaux.filter(t => t !== tonneau); // Supprime le tonneau
+                balles = balles.filter(b => b !== balle);
+                tonneaux = tonneaux.filter(t => t !== tonneau);
 
-                // Génère un cœur ou une bombe
                 if (Math.random() < 0.5) {
                     creerCoeur(tonneau.x, tonneau.y);
                 } else {
                     creerBombe(tonneau.x, tonneau.y);
                 }
-                break;
+                break; 
+            }
+        }
+
+        if (
+            joueur.x < tonneau.x + tonneau.width &&
+            joueur.x + joueur.width > tonneau.x &&
+            joueur.y < tonneau.y + tonneau.height &&
+            joueur.y + joueur.height > tonneau.y
+        ) {
+            vies-=0.5; 
+            tonneaux = tonneaux.filter(t => t !== tonneau); 
+
+            if (vies <= 0) {
+                gameOver = true;
             }
         }
     }
-
     tonneaux = tonneaux.filter(tonneau => tonneau.x > -tonneau.width);
 }
 
-function creerIA() {
-    const tonneau = {
-        x: canvas.width,
-        y: Math.random() * (canvas.height - 40),
-        width: 50,
-        height: 50,
-        speed: vitesseBase / 1.65
+
+function iaTirerMissile() {
+    const missile = {
+        x: ia.x - 10,
+        y: ia.y + ia.height / 2 - 20,
+        width: 40,
+        height: 40,
+        speed: -5
     };
-    tonneaux.push(tonneau);
+    missiles.push(missile);
 }
 
+function activerIA() {
+    iaActive = true; A
+}
+
+
 function updateIA() {
-    // Suivre verticalement
+    if (!iaActive || iaDetruite) {
+        if (iaDetruite && Date.now() - tempsDetruite >= tempsReapparitionIA) {
+            iaDetruite = false;
+            ia.x = canvas.width - 80;
+            ia.y = canvas.height / 2;
+        }
+        return;
+    }
+
     if (ia.y < joueur.y) {
         ia.y += ia.speed;
     } else if (ia.y > joueur.y) {
         ia.y -= ia.speed;
     }
 
-    // Suivre horizontalement (optionnel, si nécessaire)
-    if (ia.x < joueur.x) {
-        ia.x += ia.speed;
-    } else if (ia.x > joueur.x) {
-        ia.x -= 0;
-    }
-
-    // Limiter la position de l'IA pour qu'elle reste dans le canvas
     ia.y = Math.max(0, Math.min(canvas.height - ia.height, ia.y));
-    ia.x = Math.max(0, Math.min(canvas.width - ia.width, ia.x));
 
-    // Vérifier si l'IA touche le joueur
     if (
         ia.x < joueur.x + joueur.width &&
         ia.x + ia.width > joueur.x &&
         ia.y < joueur.y + joueur.height &&
         ia.y + ia.height > joueur.y
     ) {
-        vies--; // Réduire les vies si l'IA touche le joueur
+        vies--; 
         if (vies <= 0) {
             gameOver = true;
+        }
+    }
+
+    if (Date.now() - dernierTirIA >= delaiTirIA) {
+        iaTirerMissile();
+        dernierTirIA = Date.now();
+    }
+}
+
+
+function updateMissiles() {
+    for (let missile of missiles) {
+        missile.x += missile.speed;
+
+        if (missile.x + missile.width < 0) {
+            missiles = missiles.filter(m => m !== missile);
+            continue;
+        }
+
+        if (
+            missile.x < joueur.x + joueur.width &&
+            missile.x + missile.width > joueur.x &&
+            missile.y < joueur.y + joueur.height &&
+            missile.y + missile.height > joueur.y
+        ) {
+            vies--;
+            missiles = missiles.filter(m => m !== missile); 
+            if (vies <= 0) {
+                gameOver = true;
+            }
         }
     }
 }
 
 
-// Dessiner les éléments
 function dessiner() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Dessiner le joueur
     ctx.drawImage(joueurImage, joueur.x, joueur.y, joueur.width, joueur.height);
 
-    // Dessiner les obstacles
     for (let obs of obstacles) {
         ctx.drawImage(obstacleImage, obs.x, obs.y, obs.width, obs.height);
     }
@@ -366,41 +486,40 @@ function dessiner() {
         ctx.drawImage(vagueImage, vague.x, vague.y, vague.width, vague.height);
     }
 
-    // Dessiner les balles
     for (let balle of balles) {
         ctx.drawImage(balleImage, balle.x, balle.y, balle.width, balle.height);
     }
 
-    // Dessiner les tonneaux
     for (let tonneau of tonneaux) {
         ctx.drawImage(tonneauImage, tonneau.x, tonneau.y, tonneau.width, tonneau.height);
     }
 
-    // Dessiner les coeurs
     for (let coeur of coeurs) {
         ctx.drawImage(coeurImage, coeur.x, coeur.y, coeur.width, coeur.height);
     }
 
-    // Dessiner les bombes
     for (let bombe of bombes) {
         ctx.drawImage(bombeImage, bombe.x, bombe.y, bombe.width, bombe.height);
     }
 
-    // Dessiner l'IA
-    ctx.fillStyle = "purple";
-    ctx.fillRect(ia.x, ia.y, ia.width, ia.height);
-
-    // Dessiner un seul joueur
     ctx.drawImage(joueurImage, joueur.x, joueur.y, joueur.width, joueur.height);
 
-    // Afficher le score et les vies
+ctx.fillStyle = "orange";
+for (let missile of missiles) {
+    ctx.drawImage(missileImage, missile.x, missile.y, missile.width, missile.height);
+}
+
+if (!iaDetruite) {
+    ctx.fillStyle = "purple";
+    ctx.drawImage(IAImage, ia.x, ia.y, ia.width, ia.height);
+}
+
     ctx.fillStyle = "yellow";
     ctx.font = "20px Arial";
     ctx.fillText(`Score: ${score}`, 10, 20);
     ctx.fillText(`Vies: ${vies}`, 10, 40);
     ctx.fillText(`Vitesse: ${vitesseBase.toFixed(1)}`, 10, 60);
 
-    // Afficher "Game Over" si la partie est terminée
     if (gameOver) {
         ctx.fillStyle = "red";
         ctx.font = "40px Arial";
@@ -408,9 +527,9 @@ function dessiner() {
     }
 }
 
-
-// Boucle du jeu
 function gameLoop() {
+    setTimeout(activerIA, delaiApparitionIA);
+
     if (gameOver) return;
 
     updateJoueur();
@@ -420,6 +539,7 @@ function gameLoop() {
     updateCoeurs();
     updateBombes();
     updateTonneaux();
+    updateMissiles();
     updateIA();
 
     score++;
@@ -431,7 +551,6 @@ function gameLoop() {
 
 setInterval(creerTonneau, 5000);
 
-// Contrôles du joueur
 document.addEventListener("keydown", function (event) {
     if (event.key === "ArrowUp") {
         joueur.dy = -joueur.speed;
@@ -448,5 +567,4 @@ document.addEventListener("keyup", function (event) {
     }
 });
 
-// Démarrer le jeu
 gameLoop();
